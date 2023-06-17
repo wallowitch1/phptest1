@@ -1,0 +1,44 @@
+pipeline {
+    agent any
+
+    tools {
+        git 'Default'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                git credentialsId: '[git 자격증명 ID]', branch: 'main', url: '[GIT 리포지토리 경로]'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                // Docker를 사용하여 이미지를 빌드합니다.
+                // 이 예제에서는 Dockerfile이 프로젝트의 루트 디렉토리에 있다고 가정합니다.
+                script {
+                    dockerImage = docker.build("[도커 허브 ID]/phptest-deployment-jenkins")
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                // 빌드한 Docker 이미지를 DockerHub에 푸시합니다.
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', '[도커 허브 자격증명 이름]') {
+                        dockerImage.push("latest")
+                    }
+                }
+            }
+        }
+        stage('Deploy to Kubernetes') {
+            steps {
+                withKubeConfig([credentialsId: 'k8s_config_file', serverUrl: 'https://[쿠버네티스 마스터 노드 ip]:6443']) {
+                    sh 'kubectl apply -f php.yml'
+                    sh 'kubectl rollout restart deployment/phptest-deployment-jenkins'
+                }
+            }
+        }
+    }
+}
