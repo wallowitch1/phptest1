@@ -8,7 +8,7 @@ RUN docker-php-ext-install mysqli pdo pdo_mysql
 COPY . /var/www/html/
 
 # Apache 설정
-RUN a2enmod rewrite
+# RUN a2enmod rewrite
 
 # Apache를 실행
 CMD ["apache2-foreground"]
